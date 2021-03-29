@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS catagory_recommendation;
+
+CREATE TABLE catagory_recommendation
+(
+    product_catagory VARCHAR(128) NOT NULL,
+    first_recommendation VARCHAR(255),
+	second_recommendation VARCHAR(255),
+	third_recommendation VARCHAR(255),
+	fourth_recommendation VARCHAR(255)
+);
