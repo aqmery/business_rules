@@ -1,32 +1,27 @@
 import psycopg2
 
+"""This part above the functions creates a connection to the database
+and sets the variable genDB as the file that contains the code to generates the database"""
+
 con = psycopg2.connect(
     host="localhost",
     database="recs",
     user="postgres",
     password="HANA5612##deno",
     port="5432")
-
 cur = con.cursor()
-cur.execute("SELECT * FROM products")
-products = cur.fetchall()
-#print(products)
-
-cur.execute("SELECT category, product_id From products as C where C.category is not NULL")
-catagory = cur.fetchall()
-#print(catagory)
-
 genDB = "generateDB.txt"
 
 
 
 def create_tables(genDB):
+    """This function generates a part of the database using the generateDB.txt file
+    it only generates the part that is used in this file,
+    the rest of the database generation is done in using the functions from the group project"""
     with open(genDB, "r") as file:
         file_object = file.read().replace('\n', '')
     query_list = file_object.split(";")
-    print(file_object)
     for query in query_list:
-        print(f"query :{query}.")
         if query != "":
             cur.execute(query + ";")
             con.commit()
@@ -34,7 +29,11 @@ def create_tables(genDB):
 
 
 def category_recommendation():
-    """This function makes recommendations based on the category of the product"""
+    """This function makes recommendations based on the category of the product,
+     it uses postgresql to get this data.
+
+     Returns:
+         returns a dictionary with all product id's sorted into the category of that product."""
     cur.execute("SELECT category, product_id  From products as C where C.category is not NULL")
     catagory = cur.fetchall()
     catagorydict = {}
@@ -65,14 +64,7 @@ def fill_db(dct):
         con.commit()
 
 
-
 create_tables(genDB)
 recommendation = category_recommendation()
 fill_db(recommendation)
-
-
-
-
-
-
 
