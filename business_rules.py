@@ -1,9 +1,8 @@
 import psycopg2
-import random
 
 con = psycopg2.connect(
     host="localhost",
-    database="RCMD",
+    database="recs",
     user="postgres",
     password="HANA5612##deno",
     port="5432")
@@ -13,7 +12,7 @@ cur.execute("SELECT * FROM products")
 products = cur.fetchall()
 #print(products)
 
-cur.execute("SELECT category, id From products as C where C.category is not NULL")
+cur.execute("SELECT category, product_id From products as C where C.category is not NULL")
 catagory = cur.fetchall()
 #print(catagory)
 
@@ -34,41 +33,46 @@ def create_tables(genDB):
 
 
 
-def catagory_recommendation():
-    cur.execute("SELECT category, id  From products as C where C.category is not NULL")
+def category_recommendation():
+    """This function makes recommendations based on the category of the product"""
+    cur.execute("SELECT category, product_id  From products as C where C.category is not NULL")
     catagory = cur.fetchall()
-    print(type(catagory))
     catagorydict = {}
     for i in catagory:
         if i[0] in catagorydict:
             catagorydict[i[0]].append(i[1])
         else:
             catagorydict[i[0]] = [i[1]]
-    for j, k in catagorydict.items():
-        print(f" key : {j} |values : {k}")
     return catagorydict
 
 
+def fill_db(dct):
+    """This function fills the Postgresql database based on a dictionary,
+    it loops over the amount of keys and adds 4 of the values that are associated with that key.
+    If the key has less then 4 values it inserts the values it can and leaves the rest as null.
 
-
-def adddict(dct):
-    values = list(dct.values())
-    keys = list(dct.keys())
-    count = 0
-    for i in values:
-        print(i[:4])
-        print(keys[count])
-        cur.execute("INSERT INTO catagory_recommendation (product_catagory, first_recommendation, "
-                    "second_recommendation, third_recommendation, fourth_recommendation)"
-                    " Values (%s, %s, %s, %s, %s,)", (keys[count], i[0], i[1], i[2], i[3]))
+    Args:
+        dct: The dictionary that is used to fill the postgresql database."""
+    for key, value in dct.items():
+        lenght = 4
+        if len(value)< 4:
+            lenght = len(value)
+        db_input = list(value[:lenght])
+        db_input.insert(0, key)
+        db_input = tuple(db_input)
+        cur.execute("INSERT INTO catagory_recommendation"
+                    " Values %s", (db_input, ))
         con.commit()
-        count += 1
+
+
+
+create_tables(genDB)
+recommendation = category_recommendation()
+fill_db(recommendation)
 
 
 
 
-recommendation = catagory_recommendation()
-adddict(recommendation)
-#create_tables(genDB)
+
 
 
