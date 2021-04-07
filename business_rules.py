@@ -19,7 +19,9 @@ genDB = "generateDB.txt"
 def create_tables(genDB):
     """This function generates a part of the database using the generateDB.txt file.
     it only generates the part that is used in this file,
-    the rest of the database generation is done by using the functions from the group project"""
+    the rest of the database generation is done by using the functions from the group project.
+    Args:
+        the file name that is used to generate this part of the database."""
     with open(genDB, "r") as file:
         file_object = file.read().replace('\n', '')
     query_list = file_object.split(";")
