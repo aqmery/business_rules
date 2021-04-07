@@ -111,8 +111,6 @@ def collaborative_filtering():
 
 
 create_tables(genDB)
-# recommendation = category_recommendation()
-# segment_dict = collaborative_filtering()
 fill_db(category_recommendation(), "category_recommendation")
 fill_db(collaborative_filtering(), "collaborative_recommendation")
 
