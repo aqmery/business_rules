@@ -17,9 +17,9 @@ genDB = "generateDB.txt"
 
 
 def create_tables(genDB):
-    """This function generates a part of the database using the generateDB.txt file
+    """This function generates a part of the database using the generateDB.txt file.
     it only generates the part that is used in this file,
-    the rest of the database generation is done in using the functions from the group project"""
+    the rest of the database generation is done by using the functions from the group project"""
     with open(genDB, "r") as file:
         file_object = file.read().replace('\n', '')
     query_list = file_object.split(";")
@@ -61,7 +61,14 @@ def fill_db(dct, table_name):
 
 
 def deduplication_products(df):
+    """this function counts the amount of times a product(_id) has been bought by a certain segment.
+    It also orders the dataframe and outputs it ordered by segment and total_quantity.
 
+    Args:
+        df: the pandas dataframe that needs to be cleaned up.
+
+    Returns:
+        retuns a cleaned dataframe object."""
     prev_product = None
     prev_segment = None
     total_quantity = 0
@@ -83,7 +90,12 @@ def deduplication_products(df):
 
 
 def collaborative_filtering():
+    """This function pulls the product_id, quantity of the bought products,
+    and the segements from the order_products in postgresql.
+    It calls the deduplication_products function with the df Arg.
 
+    Returns:
+        returns a dictionary with the key as segment and the values as recommendations."""
     df = psql.read_sql_query("""SELECT product_id, quantity, segment FROM ordered_products
                                        INNER JOIN sessions ON sessions.session_id = ordered_products.session_id
                                        order by product_id, segment ASC""", con)
@@ -94,18 +106,13 @@ def collaborative_filtering():
     segment_dict = {}
     for segment in segments:
         curr = cleaned_df[cleaned_df["segment"] == segment[0]]
-        print(segment)
-        print(curr)
-
         segment_dict[segment[0]] = curr["product_id"][:4].values.tolist()
-
-        print("\n")
     return segment_dict
 
 
 create_tables(genDB)
-recommendation = category_recommendation()
-segment_dict = collaborative_filtering()
-fill_db(recommendation, "category_recommendation")
-fill_db(segment_dict, "collaborative_recommendation")
+# recommendation = category_recommendation()
+# segment_dict = collaborative_filtering()
+fill_db(category_recommendation(), "category_recommendation")
+fill_db(collaborative_filtering(), "collaborative_recommendation")
 
