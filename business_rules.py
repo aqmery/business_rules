@@ -38,15 +38,15 @@ def category_recommendation():
     cur.execute("SELECT category, product_id  From products as C where C.category is not NULL")
     category = cur.fetchall()
     categorydict = {}
-    for i in category:
-        if i[0] in categorydict:
-            categorydict[i[0]].append(i[1])
+    for product_id in category:
+        if product_id[0] in categorydict:
+            categorydict[product_id[0]].append(product_id[1])
         else:
-            categorydict[i[0]] = [i[1]]
+            categorydict[product_id[0]] = [product_id[1]]
     return categorydict
 
 
-def fill_db(dct):
+def fill_db(dct, table_name):
     """This function fills the Postgresql database based on a dictionary,
     it loops over the amount of keys and adds 4 of the values that are associated with that key.
     If the key has less then 4 values it inserts the values it can and leaves the rest as null.
@@ -55,23 +55,57 @@ def fill_db(dct):
         dct: The dictionary that is used to fill the postgresql database."""
     for key, value in dct.items():
         lenght = min(len(value), 4)
-        db_input = tuple([key] + list(value[:lenght]))
-        cur.execute("INSERT INTO category_recommendation"
-                    " Values %s", (db_input, ))
+        db_input = tuple([str(key)] + list(value[:lenght]))
+        cur.execute(f"INSERT INTO {table_name} Values %s", (db_input, ))
         con.commit()
 
 
+def deduplication_products(df):
+
+    prev_product = None
+    prev_segment = None
+    total_quantity = 0
+    cleaned_lst = []
+    for index, (product_id, quantity, segment) in df.iterrows():
+        if product_id == prev_product and segment == prev_segment:
+            total_quantity += quantity
+        else:
+            cleaned_lst.append((prev_product, total_quantity, prev_segment))
+            total_quantity = quantity
+            prev_product = product_id
+            prev_segment = segment
+    cleaned_lst.append((prev_product, total_quantity, prev_segment))
+    cleaned_lst = cleaned_lst[1:]
+    cleaned_df = pd.DataFrame(cleaned_lst)
+    cleaned_df.columns = ["product_id", "total_quantity", "segment"]
+    cleaned_df = cleaned_df.sort_values(by=["segment", 'total_quantity'], ascending=False)
+    return cleaned_df
+
+
 def collaborative_filtering():
-    #df_last = psql.read_sql_query("SELECT session_end, product_id FROM ordered_products INNER JOIN sessions ON "
-    #                              "sessions.session_id = ordered_products.session_id order by session_end DESC", con)
-    df_last = psql.read_sql_query("""SELECT quantity, product_id FROM ordered_products INNER JOIN sessions ON
-                                  sessions.session_id = ordered_products.session_id INNER JOIN profiles ON
-                                  sessions.profile_id = profiles profile_id order by session_end DESC""", con)
-    print(df_last)
+
+    df = psql.read_sql_query("""SELECT product_id, quantity, segment FROM ordered_products
+                                       INNER JOIN sessions ON sessions.session_id = ordered_products.session_id
+                                       order by product_id, segment ASC""", con)
+    cleaned_df = deduplication_products(df)
+
+    cur.execute("SELECT distinct segment from sessions")
+    segments = cur.fetchall()
+    segment_dict = {}
+    for segment in segments:
+        curr = cleaned_df[cleaned_df["segment"] == segment[0]]
+        print(segment)
+        print(curr)
+
+        segment_dict[segment[0]] = curr["product_id"][:4].values.tolist()
+
+        print("\n")
+    return segment_dict
 
 
+create_tables(genDB)
+recommendation = category_recommendation()
+segment_dict = collaborative_filtering()
+fill_db(recommendation, "category_recommendation")
+fill_db(segment_dict, "collaborative_recommendation")
 
-#create_tables(genDB)
-#recommendation = category_recommendation()
-#fill_db(recommendation)
-collaborative_filtering()
