@@ -68,7 +68,7 @@ def deduplication_products(df):
         df: the pandas dataframe that needs to be cleaned up.
 
     Returns:
-        retuns a cleaned dataframe object."""
+        returns a cleaned dataframe object."""
     prev_product = None
     prev_segment = None
     total_quantity = 0
@@ -91,7 +91,7 @@ def deduplication_products(df):
 
 def collaborative_filtering():
     """This function pulls the product_id, quantity of the bought products,
-    and the segements from the order_products in postgresql.
+    and the segments from the order_products in postgresql.
     It calls the deduplication_products function with the df Arg.
 
     Returns:
